@@ -1,0 +1,2 @@
+# Golden CSV must keep its CRLF line endings.
+Core/Tests/CanopyCoreTests/Resources/golden.csv -text

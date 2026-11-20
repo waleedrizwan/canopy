@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "phoneModel": null,
+  "signalMethod": null,
+  "defaultCamera": "back",
+  "diffusers": [
+    { "id": "none", "name": "No diffuser" }
+  ],
+  "kBase": [],
+  "lightTypes": [],
+  "defaultLightTypeID": null
+}

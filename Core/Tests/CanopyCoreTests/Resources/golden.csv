@@ -1,0 +1,4 @@
+timestamp,lux,ppfd_umol_m2_s,dli_mol_m2_d,photoperiod_h,light_type,diffuser,camera,calibration_multiplier,label,note
+2026-01-15T09:30:00+01:00,12345.68,228.40,9.87,12.00,LED (full spectrum),none,back,1.10,Tomatoes,
+2026-01-15T21:05:30+01:00,0.00,0.00,0.00,24.00,HPS,none,front,1.00,"Shelf, top","He said ""too bright"", then
+moved it"
