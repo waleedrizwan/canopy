@@ -1,0 +1,18 @@
+included:
+  - App/Sources
+  - App/UITests
+  - Core/Sources
+  - Core/Tests
+excluded:
+  - build
+  - Core/.build
+opt_in_rules:
+  - force_unwrapping
+disabled_rules:
+  - trailing_comma  # swift-format adds trailing commas; the two tools disagree
+  - opening_brace  # swift-format puts the brace on its own line after multi-line conditions
+line_length:
+  warning: 120
+  error: 160
+identifier_name:
+  excluded: [a, b, c, d, e, f, g, h, i, k, n, r, s, t, v, w, x, y, z, p, lo, hi, id, df, bx, by, px, ss, rr, ids, m, l, cv, pb, sb, xs, up, x0, y0, x1, y1]

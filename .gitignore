@@ -1,0 +1,8 @@
+build/
+Core/.build/
+.DS_Store
+xcuserdata/
+*.xcresult
+spike-data/
+Canopy.xcodeproj/
+Config/Local.xcconfig

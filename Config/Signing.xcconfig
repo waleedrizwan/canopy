@@ -1,0 +1,7 @@
+// Signing defaults for anyone building Canopy.
+// Put your own team and bundle ID in Config/Local.xcconfig (gitignored);
+// see Config/Local.xcconfig.example.
+DEVELOPMENT_TEAM =
+CANOPY_BUNDLE_ID = com.example.canopy
+
+#include? "Local.xcconfig"
