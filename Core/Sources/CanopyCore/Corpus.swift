@@ -38,6 +38,19 @@ public struct ReferenceReading: Codable, Equatable, Sendable {
     public var note: String?
     /// Second reference (e.g. borrowed PAR meter), optional.
     public var parMeterPPFD: Double?
+
+    public init(
+        captureID: Int, lux: Double, ppfd: Double? = nil, lightType: String? = nil, diffuser: String,
+        note: String? = nil, parMeterPPFD: Double? = nil
+    ) {
+        self.captureID = captureID
+        self.lux = lux
+        self.ppfd = ppfd
+        self.lightType = lightType
+        self.diffuser = diffuser
+        self.note = note
+        self.parMeterPPFD = parMeterPPFD
+    }
 }
 
 public enum CorpusReplay {

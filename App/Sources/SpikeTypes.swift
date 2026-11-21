@@ -110,6 +110,43 @@ enum SpikeStore {
         return dir
     }
 
+    /// Photone readings typed in next to each capture, in the format `canopy-tool fit` reads.
+    static func loadReferences() -> [ReferenceReading] {
+        guard let dir = try? directory(),
+            let data = try? Data(contentsOf: dir.appendingPathComponent("references.json"))
+        else { return [] }
+        return (try? JSONDecoder().decode([ReferenceReading].self, from: data)) ?? []
+    }
+
+    /// Sets (or with nil, removes) the reference lux for one capture.
+    static func setReference(captureID: Int, lux: Double?, diffuser: String) throws {
+        var refs = loadReferences().filter { $0.captureID != captureID }
+        if let lux { refs.append(ReferenceReading(captureID: captureID, lux: lux, diffuser: diffuser)) }
+        refs.sort { $0.captureID < $1.captureID }
+        let enc = JSONEncoder()
+        enc.outputFormatting = [.prettyPrinted, .sortedKeys]
+        try enc.encode(refs).write(to: directory().appendingPathComponent("references.json"), options: .atomic)
+    }
+
+    /// Zips the whole capture folder into a temporary file the share sheet can send.
+    static func zipForSharing() throws -> URL {
+        let dir = try directory()
+        var result: Result<URL, Error> = .failure(CocoaError(.fileReadUnknown))
+        var coordError: NSError?
+        // `.forUploading` hands back a zip of the directory, valid only inside the block.
+        NSFileCoordinator().coordinate(readingItemAt: dir, options: .forUploading, error: &coordError) { zip in
+            let stamp = Date().formatted(.iso8601.year().month().day())
+            let dest = FileManager.default.temporaryDirectory.appendingPathComponent("canopy-captures-\(stamp).zip")
+            result = Result {
+                try? FileManager.default.removeItem(at: dest)
+                try FileManager.default.copyItem(at: zip, to: dest)
+                return dest
+            }
+        }
+        if let coordError { throw coordError }
+        return try result.get()
+    }
+
     static func nextID(in dir: URL) throws -> Int {
         let names = try FileManager.default.contentsOfDirectory(atPath: dir.path)
         let ids = names.compactMap { n -> Int? in

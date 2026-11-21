@@ -10,6 +10,10 @@ final class SpikeModel {
     var camera: Calibration.CameraPosition = .back { didSet { restart() } }
     var fps: Double = Provisional.frameRate { didSet { restart() } }
     var saved: [SavedCapture] = []
+    /// Photone lux typed in per capture ID, mirrored to references.json.
+    var references: [Int: Double] = Dictionary(
+        SpikeStore.loadReferences().map { ($0.captureID, $0.lux) }, uniquingKeysWith: { _, last in last })
+    var shareFile: URL?
     var lastMessage: String?
     var permission: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
 
@@ -25,6 +29,7 @@ final class SpikeModel {
                 switch result {
                 case .success(let cap):
                     self?.saved.insert(cap, at: 0)
+                    self?.shareFile = nil  // the zip no longer has everything
                     self?.lastMessage = "Saved #\(cap.id)"
                 case .failure(let e):
                     self?.lastMessage = "Save failed: \(e)"
@@ -67,6 +72,24 @@ final class SpikeModel {
         }
     }
 
+    func setReference(_ lux: Double?, for captureID: Int) {
+        references[captureID] = lux
+        shareFile = nil
+        do {
+            try SpikeStore.setReference(captureID: captureID, lux: lux, diffuser: "none")
+        } catch {
+            lastMessage = "Couldn't save Photone reading: \(error.localizedDescription)"
+        }
+    }
+
+    func prepareShare() {
+        do {
+            shareFile = try SpikeStore.zipForSharing()
+        } catch {
+            lastMessage = "Couldn't prepare files: \(error.localizedDescription)"
+        }
+    }
+
     private func restart() {
         guard running else { return }
         engine.start(method: method, camera: camera, fps: fps)
@@ -85,7 +108,7 @@ struct SpikeView: View {
                 content
             }
         }
-        .navigationTitle("T0.0 Spike")
+        .navigationTitle("Calibration captures")
         .navigationBarTitleDisplayMode(.inline)
         .task { await model.appear() }
         .onDisappear { model.disappear() }
@@ -141,8 +164,8 @@ struct SpikeView: View {
                 }
             }
 
-            Section("Recent captures") {
-                ForEach(model.saved.prefix(8), id: \.id) { c in
+            Section {
+                ForEach(model.saved, id: \.id) { c in
                     VStack(alignment: .leading) {
                         Text("#\(c.id) — \(c.camera.rawValue), method \(c.method.rawValue), \(Int(c.requestedFPS)) fps")
                             .bold()
@@ -150,8 +173,23 @@ struct SpikeView: View {
                             .font(.caption).monospacedDigit()
                         Text("S_B \(num(c.meanSignalB)) (CV \(c.cvSignalB.map(pct) ?? "—"))")
                             .font(.caption).monospacedDigit()
+                        ReferenceField(initial: model.references[c.id]) { model.setReference($0, for: c.id) }
                     }
                 }
+            } header: {
+                Text("Captures this session")
+            } footer: {
+                Text("Type the Photone lux reading for each capture.")
+            }
+
+            Section {
+                if let file = model.shareFile {
+                    ShareLink("Send captures", item: file).bold()
+                } else {
+                    Button("Prepare captures to send") { model.prepareShare() }
+                }
+            } footer: {
+                Text("Sends every capture and Photone reading on this phone as one zip file.")
             }
 
             Section("Details") {
@@ -176,6 +214,30 @@ struct SpikeView: View {
 
     private func pct(_ v: Double) -> String { String(format: "%.2f%%", v * 100) }
     private func num(_ v: Double?) -> String { v.map { $0.formatted(.number.precision(.significantDigits(5))) } ?? "—" }
+}
+
+/// Photone lux for one capture. Saves on every edit; an empty or invalid field clears it.
+private struct ReferenceField: View {
+    let onChange: (Double?) -> Void
+    @State private var text: String
+
+    init(initial: Double?, onChange: @escaping (Double?) -> Void) {
+        self.onChange = onChange
+        _text = State(initialValue: initial.map { $0.formatted(.number.grouping(.never)) } ?? "")
+    }
+
+    var body: some View {
+        LabeledContent("Photone lux") {
+            TextField("e.g. 12500", text: $text)
+                .keyboardType(.decimalPad)
+                .multilineTextAlignment(.trailing)
+                .monospacedDigit()
+        }
+        .onChange(of: text) { _, new in
+            let value = Double(new.replacingOccurrences(of: ",", with: "."))
+            onChange(value.flatMap { $0 > 0 ? $0 : nil })
+        }
+    }
 }
 
 struct PermissionDeniedView: View {
