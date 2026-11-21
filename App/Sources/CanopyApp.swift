@@ -15,8 +15,12 @@ struct CanopyApp: App {
 struct RootView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.scenePhase) private var scenePhase
+    @AppStorage("seenInstructions") private var seenInstructions = false
 
     var body: some View {
+        // UI tests run on a fixture signal and skip the first-launch instructions.
+        let showInstructions = Binding(
+            get: { !seenInstructions && app.usesLiveCamera }, set: { if !$0 { seenInstructions = true } })
         TabView {
             NavigationStack { CameraPermissionGate { MeasureView() } }.tabItem {
                 Label("Measure", systemImage: "sun.max")
@@ -27,6 +31,14 @@ struct RootView: View {
             NavigationStack { SettingsView() }.tabItem { Label("Settings", systemImage: "gear") }
         }
         .onChange(of: scenePhase) { _, phase in app.measure.setAppActive(phase == .active) }
+        .sheet(isPresented: showInstructions) {
+            NavigationStack {
+                InstructionsView().toolbar {
+                    Button("Done") { seenInstructions = true }.accessibilityIdentifier("closeInstructions")
+                }
+            }
+            .interactiveDismissDisabled()
+        }
     }
 }
 

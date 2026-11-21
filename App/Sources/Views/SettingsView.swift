@@ -7,6 +7,9 @@ struct SettingsView: View {
     var body: some View {
         @Bindable var app = app
         List {
+            Section {
+                NavigationLink("Instructions") { InstructionsView() }.accessibilityIdentifier("instructions")
+            }
             Section("Measuring") {
                 Picker("Camera", selection: $app.settings.camera) {
                     Text("Back").tag(Calibration.CameraPosition.back)
@@ -41,7 +44,7 @@ struct SettingsView: View {
                 if let e = app.saveError { Text(e).foregroundStyle(.red) }
             }
             Section("Development") {
-                NavigationLink("T0.0 spike screen") { SpikeView() }
+                NavigationLink("Calibration captures") { SpikeView() }
             }
         }
         .navigationTitle("Settings")
